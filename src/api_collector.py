@@ -1,8 +1,10 @@
+from dotenv import load_dotenv
 import os
 import requests
 import pandas as pd
 import time
 
+load_dotenv()
 BASE_URL = "https://api.github.com/search/repositories"
 
 

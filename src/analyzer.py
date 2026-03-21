@@ -5,10 +5,10 @@ import pandas as pd
 def add_features(df):
 
     # Convert date
-    df["created_at"] = pd.to_datetime(df["created_at"])
+    df["created_at"] = pd.to_datetime(df["created_at"],utc=True)
 
     # Repo age in days
-    df["repo_age_days"] = (pd.Timestamp.now() - df["created_at"]).dt.days
+    df["repo_age_days"] = (pd.Timestamp.utcnow() - df["created_at"]).dt.days
 
     # Stars per day (growth metric)
     df["stars_per_day"] = df["stars"] / (df["repo_age_days"] + 1)
