@@ -1,40 +1,38 @@
 import os
 import subprocess
 import streamlit as st
+from src.api_collector import fetch_repositories
+from src.data_cleaner import clean_data
+from src.analyzer import add_features, rank_repositories
 import pandas as pd
+
 
 st.title("GitHub Developer Analytics Platform")
 
 st.set_page_config(page_title="GitHub Analytics", layout="wide")
 
-file_path = "data/processed_repos.csv"
-if not os.path.exists(file_path):
-  st.info("Fetching data from Github..... Please Wait..")
+if st.button("Refresh Data"):
+   st.cache_data.clear()
+   st.success("Fetching latest data ...")
+@st.cache_data(ttl=3600)
+def load_data():
+    df = fetch_repositories()
+    clean_df = clean_data("data/raw_repos.csv")
+    featured_df = add_features(clean_df)
+    ranked_df = rank_repositories(featured_df)
+    return ranked_df
 
-  try:
-    subprocess.run(["python", "main.py"], check=True)
+df = load_data()
 
-  except Exception as e:
-    st.error(f"Error fetching data: {e}")
-    st.stop()
-
-df = pd.read_csv("data/processed_repos.csv")
-
-st.write("Dataset Preview")
+st.subheader("Dataset Preview")
 st.dataframe(df.head())
 
 st.subheader("Top Programming Languages")
+st.bar_chart(df["language"].value_counts().head(5)) 
 
-lang_counts = df["language"].value_counts()
-
-st.bar_chart(lang_counts)
-
-st.subheader("Top Ranked Repositories")
-
+st.subheader("Top Repositories")
 top_repos = df.sort_values(by="score", ascending=False).head(10)
-
-st.dataframe(top_repos[["name", "stars", "forks", "score"]])
-
+st.dataframe(top_repos)
 
 st.sidebar.header("Filters")
 
