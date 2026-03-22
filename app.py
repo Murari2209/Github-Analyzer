@@ -1,7 +1,22 @@
+import os
+import subprocess
 import streamlit as st
 import pandas as pd
 
-st.title("GitHub Developer Analytics Dashboard")
+st.title("GitHub Developer Analytics Platform")
+
+st.set_page_config(page_title="GitHub Analytics", layout="wide")
+
+file_path = "data/processed_repos.csv"
+if not os.path.exists(file_path):
+  st.info("Fetching data from Github..... Please Wait..")
+
+  try:
+    subprocess.run(["python", "main.py"], check=True)
+
+  except Exception as e:
+    st.error(f"Error fetching data: {e}")
+    st.stop()
 
 df = pd.read_csv("data/processed_repos.csv")
 
