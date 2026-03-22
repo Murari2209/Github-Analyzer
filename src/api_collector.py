@@ -2,6 +2,10 @@ import requests
 import os
 import streamlit as st
 import pandas as pd
+import datetime
+
+today = datetime.date.today()
+last_week = today - datetime.timedelta(days=7)  
 
 def fetch_repositories(topic="python", max_pages=2):
 
@@ -20,7 +24,7 @@ def fetch_repositories(topic="python", max_pages=2):
         url = "https://api.github.com/search/repositories"
 
         params = {
-            "q": topic,
+            "q": f"{topic} created:>{last_week}",
             "sort": "stars",
             "order": "desc",
             "per_page": 50,
