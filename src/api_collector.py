@@ -3,6 +3,9 @@ import os
 import requests
 import pandas as pd
 import time
+import datetime
+
+today = datetime.date.today()
 
 load_dotenv()
 BASE_URL = "https://api.github.com/search/repositories"
@@ -24,7 +27,7 @@ def fetch_repositories(topic="python", max_pages=5):
     for page in range(1, max_pages + 1):
 
         params = {
-            "q": f"topic:{topic}",
+            "q": f"topic:{topic} created:>{today}",
             "page": page,
             "per_page": 30
         }

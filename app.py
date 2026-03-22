@@ -13,8 +13,9 @@ st.set_page_config(page_title="GitHub Analytics", layout="wide")
 
 if st.button("Refresh Data"):
    st.cache_data.clear()
+   st.rerun()
    st.success("Fetching latest data ...")
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def load_data():
     df = fetch_repositories()
     clean_df = clean_data("data/raw_repos.csv")
