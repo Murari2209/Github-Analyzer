@@ -15,15 +15,22 @@ if st.button("Refresh Data"):
    st.cache_data.clear()
    st.rerun()
    st.success("Fetching latest data ...")
+
 @st.cache_data(ttl=60)
 def load_data():
     df = fetch_repositories()
-    clean_df = clean_data("data/raw_repos.csv")
+    if df.empty:
+        return df
+    clean_df = clean_data(df)
     featured_df = add_features(clean_df)
     ranked_df = rank_repositories(featured_df)
     return ranked_df
 
 df = load_data()
+
+if df.empty:
+    st.error("No data available. Please try again later.")
+    st.stop()
 
 st.subheader("Dataset Preview")
 st.dataframe(df.head())

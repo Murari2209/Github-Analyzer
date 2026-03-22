@@ -1,74 +1,57 @@
-from dotenv import load_dotenv
-import os
 import requests
+import os
+import streamlit as st
 import pandas as pd
-import time
-import datetime
 
-today = datetime.date.today()
+def fetch_repositories(topic="python", max_pages=2):
 
-load_dotenv()
-BASE_URL = "https://api.github.com/search/repositories"
-
-
-def fetch_repositories(topic="python", max_pages=5):
-
-    token = os.getenv("GITHUB_TOKEN")
+    token = os.getenv("GITHUB_TOKEN") or st.secrets.get("GITHUB_TOKEN")
 
     if not token:
-        raise Exception("GitHub token not found. Set GITHUB_TOKEN.")
+        raise Exception("GitHub token not found")
 
     headers = {
         "Authorization": f"token {token}"
     }
 
-    repos = []
+    all_repos = []
 
     for page in range(1, max_pages + 1):
+        url = "https://api.github.com/search/repositories"
 
         params = {
-            "q": f"topic:{topic} created:>{today}",
-            "page": page,
-            "per_page": 30
+            "q": topic,
+            "sort": "stars",
+            "order": "desc",
+            "per_page": 50,
+            "page": page
         }
 
-        try:
-            response = requests.get(BASE_URL, headers=headers, params=params)
+        response = requests.get(url, headers=headers, params=params)
 
-            # 🔍 Check status
-            if response.status_code == 200:
+        # ✅ Handle API failure
+        if response.status_code != 200:
+            st.error(f"GitHub API Error: {response.status_code}")
+            return pd.DataFrame()
 
-                data = response.json()
+        data = response.json()
 
-                for repo in data.get("items", []):
-                    repos.append({
-                        "name": repo["name"],
-                        "stars": repo["stargazers_count"],
-                        "forks": repo["forks_count"],
-                        "language": repo["language"],
-                        "created_at": repo["created_at"]
-                    })
+        items = data.get("items", [])
 
-                print(f"Page {page} fetched successfully")
+        if not items:
+            break
 
-            elif response.status_code == 403:
-                print("Rate limit hit. Sleeping for 60 seconds...")
-                time.sleep(60)
-                continue
+        for repo in items:
+            all_repos.append({
+                "name": repo["name"],
+                "stars": repo["stargazers_count"],
+                "forks": repo["forks_count"],
+                "language": repo["language"],
+                "created_at": repo["created_at"]
+            })
 
-            else:
-                print(f"Error: {response.status_code}")
-                continue
+    # ✅ IMPORTANT: Handle empty data safely
+    if len(all_repos) == 0:
+        return pd.DataFrame()
 
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}")
-            continue
-
-        # ⏱️ Small delay (good practice)
-        time.sleep(1)
-
-    df = pd.DataFrame(repos)
-
-    df.to_csv("data/raw_repos.csv", index=False)
-
-    return df
+    return pd.DataFrame(all_repos)

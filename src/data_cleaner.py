@@ -1,10 +1,12 @@
 import pandas as pd
 
-def clean_data(file_path):
+def clean_data(df):
 
-    df = pd.read_csv(file_path)
+    if df.empty:
 
-    df = df.dropna()
+        return df
+    df = df.dropna(subset=["language"])
+    df = df.drop_duplicates(subset=["name"])
 
     df["created_at"] = pd.to_datetime(df["created_at"])
 
