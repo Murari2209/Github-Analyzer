@@ -5,6 +5,8 @@ from github_service import fetch_github_data
 from src.api_collector import fetch_repositories
 from src.data_cleaner import clean_data
 from src.analyzer import add_features, rank_repositories
+
+from ai_service import analyze_developer
 import pandas as pd
 
 
@@ -37,6 +39,8 @@ if analyze_btn and username:
      st.warning("No repositories found")
     else:
      st.success("Data fetched successfully")
+     with st.spinner("🤖 AI is analyzing developer profile..."):
+      ai_analysis = analyze_developer(profile, repos)
      st.write(f"Total repos: {len(repos)}")
 
     col1, col2 = st.columns([1, 3])
@@ -48,6 +52,12 @@ if analyze_btn and username:
      st.markdown(f"### {profile.get('name') or profile.get('login')}")
      st.markdown(f"**Bio:** {profile.get('bio') or 'No bio'}")
      st.markdown(f"🔗 [GitHub Profile]({profile.get('html_url')})")
+
+     st.markdown("---")
+
+     st.subheader("🤖 AI Developer Analysis")
+
+     st.markdown(ai_analysis)
     
     
 

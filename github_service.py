@@ -1,6 +1,7 @@
 import requests
 import os
 
+
 def fetch_github_data(username):
     base_url = "https://api.github.com/users"
 
