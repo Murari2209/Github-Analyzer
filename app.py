@@ -1,15 +1,55 @@
 import os
 import subprocess
 import streamlit as st
+from github_service import fetch_github_data
 from src.api_collector import fetch_repositories
 from src.data_cleaner import clean_data
 from src.analyzer import add_features, rank_repositories
 import pandas as pd
 
 
+st.set_page_config(page_title="GitHub Analytics", layout="wide")
 st.title("GitHub Developer Analytics Platform")
 
-st.set_page_config(page_title="GitHub Analytics", layout="wide")
+
+st.subheader("🔍 Analyze GitHub Developer")
+
+col1, col2 = st.columns([4, 2])
+
+with col1:
+    username = st.text_input("Enter GitHub Username")
+
+with col2:
+    analyze_btn = st.button("Analyze")
+
+if analyze_btn and username:
+    profile, repos, error = fetch_github_data(username)
+
+    if error:
+        st.error(error)
+        st.stop()
+
+    if repos is None:
+     st.error("Failed to fetch repositories")
+     st.stop()
+
+    if len(repos) == 0:
+     st.warning("No repositories found")
+    else:
+     st.success("Data fetched successfully")
+     st.write(f"Total repos: {len(repos)}")
+
+    col1, col2 = st.columns([1, 3])
+
+    with col1:
+     st.image(profile["avatar_url"], width=120)
+
+    with col2:
+     st.markdown(f"### {profile.get('name') or profile.get('login')}")
+     st.markdown(f"**Bio:** {profile.get('bio') or 'No bio'}")
+     st.markdown(f"🔗 [GitHub Profile]({profile.get('html_url')})")
+    
+    
 
 if st.button("Refresh Data"):
    st.cache_data.clear()

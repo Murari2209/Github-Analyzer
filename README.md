@@ -26,6 +26,8 @@ A production-style Python project that collects repository data from GitHub, pro
 - Matplotlib
 - Python-dotenv
 - GitHub REST API
+- google-generativeai
+
 
 ---
 
