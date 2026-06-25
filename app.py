@@ -1,17 +1,37 @@
 import os
 import subprocess
 import streamlit as st
-from github_service import fetch_github_data
+from github_service import fetch_github_data,calculate_developer_score
+from pdf_service import generate_pdf
 from src.api_collector import fetch_repositories
 from src.data_cleaner import clean_data
 from src.analyzer import add_features, rank_repositories
-
 from ai_service import analyze_developer
 import pandas as pd
 
 
 st.set_page_config(page_title="GitHub Analytics", layout="wide")
 st.title("GitHub Developer Analytics Platform")
+
+
+def _profile_snapshot(profile):
+    keys = ("login", "name", "bio", "followers", "public_repos", "html_url")
+    return tuple((key, profile.get(key)) for key in keys)
+
+
+def _repo_snapshot(repos):
+    keys = ("name", "language", "stargazers_count", "forks_count")
+    return tuple(
+        tuple((key, repo.get(key)) for key in keys)
+        for repo in repos[:50]
+    )
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_cached_ai_analysis(profile_snapshot, repo_snapshot):
+    profile = dict(profile_snapshot)
+    repos = [dict(repo) for repo in repo_snapshot]
+    return analyze_developer(profile, repos)
 
 
 st.subheader("🔍 Analyze GitHub Developer")
@@ -25,7 +45,27 @@ with col2:
     analyze_btn = st.button("Analyze")
 
 if analyze_btn and username:
-    profile, repos, error = fetch_github_data(username)
+    profile, repos, error = fetch_github_data(username.strip())
+    developer_score = calculate_developer_score(profile, repos)
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "🏆 Developer Score",
+            f"{developer_score}/100"
+        )
+
+    with col2:
+        st.metric(
+            "👥 Followers",
+            profile.get("followers", 0)
+        )
+
+    with col3:
+        st.metric(
+            "📦 Repositories",
+            profile.get("public_repos", 0)
+        )
 
     if error:
         st.error(error)
@@ -37,11 +77,20 @@ if analyze_btn and username:
 
     if len(repos) == 0:
      st.warning("No repositories found")
+     ai_analysis = "No repository data available for analysis."
     else:
      st.success("Data fetched successfully")
      with st.spinner("🤖 AI is analyzing developer profile..."):
-      ai_analysis = analyze_developer(profile, repos)
-     st.write(f"Total repos: {len(repos)}")
+      ai_analysis = get_cached_ai_analysis(
+          _profile_snapshot(profile),
+          _repo_snapshot(repos),
+      )
+    pdf_file = generate_pdf(
+       profile,
+       repos,
+       ai_analysis)
+    
+    st.write(f"Total repos: {len(repos)}")
 
     col1, col2 = st.columns([1, 3])
 
@@ -58,6 +107,14 @@ if analyze_btn and username:
      st.subheader("🤖 AI Developer Analysis")
 
      st.markdown(ai_analysis)
+
+     st.download_button(
+      label="📄 Download PDF Report",
+      data=pdf_file,
+      file_name=f"{profile['login']}_developer_report.pdf",
+      mime="application/pdf",
+      use_container_width=True
+)
     
     
 

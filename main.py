@@ -6,7 +6,12 @@ from src.analyzer import add_features, rank_repositories ,top_languages
 
 df = fetch_repositories()
 
-clean_df = clean_data("data/raw_repos.csv")
+if df.empty:
+    raise SystemExit("No repositories fetched from GitHub.")
+
+df.to_csv("data/raw_repos.csv", index=False)
+
+clean_df = clean_data(df)
 
 lang_counts = top_languages(clean_df)
 
