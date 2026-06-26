@@ -47,6 +47,7 @@ if analyze_btn and username:
     render_metric_cards(
      profile,
      repos,
+     developer_score
   )
 
     if error:
@@ -73,7 +74,7 @@ if analyze_btn and username:
        ai_analysis)
     
     st.write(f"Total repos: {len(repos)}")
-    render_profile_card(profile, repos)
+    render_profile_card(profile, developer_score)
 
     
     render_ai_analysis(ai_analysis)
