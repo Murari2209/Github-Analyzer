@@ -1,18 +1,25 @@
 import os
 import subprocess
 import streamlit as st
+from components.hero import render_hero
 from github_service import fetch_github_data,calculate_developer_score
 from pdf_service import generate_pdf
 from src.api_collector import fetch_repositories
 from src.data_cleaner import clean_data
 from src.analyzer import add_features, rank_repositories
 from ai_service import analyze_developer
+from components.profile_card import render_profile_card
+from components.metric_cards import render_metric_cards
+from components.ai_analysis import render_ai_analysis
 import pandas as pd
 
+st.set_page_config(
+    page_title="AI GitHub Developer Analyzer",
+    page_icon="🤖",
+    layout="wide",
+)
 
-st.set_page_config(page_title="GitHub Analytics", layout="wide")
-st.title("GitHub Developer Analytics Platform")
-
+username, analyze_btn = render_hero()
 
 def _profile_snapshot(profile):
     keys = ("login", "name", "bio", "followers", "public_repos", "html_url")
@@ -33,39 +40,15 @@ def get_cached_ai_analysis(profile_snapshot, repo_snapshot):
     repos = [dict(repo) for repo in repo_snapshot]
     return analyze_developer(profile, repos)
 
-
-st.subheader("🔍 Analyze GitHub Developer")
-
-col1, col2 = st.columns([4, 2])
-
-with col1:
-    username = st.text_input("Enter GitHub Username")
-
-with col2:
-    analyze_btn = st.button("Analyze")
-
 if analyze_btn and username:
     profile, repos, error = fetch_github_data(username.strip())
     developer_score = calculate_developer_score(profile, repos)
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric(
-            "🏆 Developer Score",
-            f"{developer_score}/100"
-        )
-
-    with col2:
-        st.metric(
-            "👥 Followers",
-            profile.get("followers", 0)
-        )
-
-    with col3:
-        st.metric(
-            "📦 Repositories",
-            profile.get("public_repos", 0)
-        )
+    
+    render_metric_cards(
+     profile,
+     repos,
+     developer_score
+  )
 
     if error:
         st.error(error)
@@ -91,37 +74,25 @@ if analyze_btn and username:
        ai_analysis)
     
     st.write(f"Total repos: {len(repos)}")
+    render_profile_card(profile, developer_score)
 
-    col1, col2 = st.columns([1, 3])
-
-    with col1:
-     st.image(profile["avatar_url"], width=120)
-
-    with col2:
-     st.markdown(f"### {profile.get('name') or profile.get('login')}")
-     st.markdown(f"**Bio:** {profile.get('bio') or 'No bio'}")
-     st.markdown(f"🔗 [GitHub Profile]({profile.get('html_url')})")
-
-     st.markdown("---")
-
-     st.subheader("🤖 AI Developer Analysis")
-
-     st.markdown(ai_analysis)
-
-     st.download_button(
-      label="📄 Download PDF Report",
-      data=pdf_file,
-      file_name=f"{profile['login']}_developer_report.pdf",
-      mime="application/pdf",
-      use_container_width=True
-)
     
+    render_ai_analysis(ai_analysis)
     
+    st.download_button(
+        label="📄 Download PDF Report",
+        data=pdf_file,
+        file_name=f"{profile['login']}_developer_report.pdf",
+        mime="application/pdf",
+        use_container_width=True
+    )
+        
+        
 
-if st.button("Refresh Data"):
-   st.cache_data.clear()
-   st.rerun()
-   st.success("Fetching latest data ...")
+    if st.button("Refresh Data"):
+     st.cache_data.clear()
+     st.rerun()
+     st.success("Fetching latest data ...")
 
 @st.cache_data(ttl=60)
 def load_data():
